@@ -4,9 +4,10 @@ import type { Pipeline, ParamValues } from '../pipelines/_types';
 interface Props {
   pipeline: Pipeline;
   values?: ParamValues;
+  showPause?: boolean;
 }
 
-const { pipeline, values } = Astro.props;
+const { pipeline, values, showPause = false } = Astro.props;
 
 const currentValues: ParamValues = {};
 for (const [key, def] of Object.entries(pipeline.params)) {
@@ -14,7 +15,7 @@ for (const [key, def] of Object.entries(pipeline.params)) {
 }
 ---
 <aside
-  class="param-panel bg-surface border-l border-border h-full overflow-y-auto"
+  class="param-panel bg-surface border-l border-border h-full overflow-y-auto w-80"
   data-pipeline-id={pipeline.id}
 >
   <div class="p-6 space-y-6">
@@ -22,6 +23,19 @@ for (const [key, def] of Object.entries(pipeline.params)) {
       <h2 class="font-display italic text-2xl text-text">{pipeline.name}</h2>
       <p class="text-text-muted text-xs mt-2 leading-relaxed">{pipeline.description}</p>
     </div>
+
+    {showPause && (
+      <button class="pause-btn btn w-full justify-center text-xs gap-2" aria-label="Pause">
+        <svg class="pause-icon w-3 h-3" viewBox="0 0 12 12" fill="currentColor">
+          <rect x="2.5" y="2" width="2.5" height="8" />
+          <rect x="7" y="2" width="2.5" height="8" />
+        </svg>
+        <svg class="play-icon hidden w-3 h-3" viewBox="0 0 12 12" fill="currentColor">
+          <path d="M3 2 L10 6 L3 10 Z" />
+        </svg>
+        <span class="pause-label">Pause</span>
+      </button>
+    )}
 
     <div class="space-y-5">
       {Object.entries(pipeline.params).map(([key, def]) => (

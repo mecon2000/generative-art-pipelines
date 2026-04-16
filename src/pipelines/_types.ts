@@ -24,6 +24,7 @@ export interface Pipeline {
   tags: string[];
   params: ParamSchema;
   renderer?: 'P2D' | 'WEBGL';
+  animated?: boolean; // defaults to true
   setup: (p: import('p5'), params: ParamValues, canvas: HTMLCanvasElement) => unknown;
   draw: (p: import('p5'), params: ParamValues, state: unknown, frame: number) => void;
   onParamChange?: (p: import('p5'), params: ParamValues, state: unknown) => void;

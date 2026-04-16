@@ -11,6 +11,7 @@ interface Props {
 
 const { pipeline } = Astro.props;
 const theme = getTheme(pipeline.theme);
+const isAnimated = pipeline.animated !== false;
 
 const urlParams = Astro.url.searchParams;
 const initialValues: ParamValues = {};
@@ -41,21 +42,27 @@ for (const [key, def] of Object.entries(pipeline.params)) {
       />
 
       <div class="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-center gap-2 flex-wrap bg-gradient-to-t from-void/60 to-transparent">
-        <button class="tool-btn btn text-xs" data-action="playPause" aria-label="Pause">
-          <span class="play-pause-label">Pause</span>
-        </button>
         <button class="tool-btn btn text-xs" data-action="newSeed">New Seed</button>
         <button class="tool-btn btn text-xs" data-action="save">Save PNG</button>
         <button class="tool-btn btn text-xs" data-action="fullscreen">Fullscreen</button>
         <button class="tool-btn btn text-xs" data-action="share">Share</button>
-        <button class="tool-btn btn text-xs hidden lg:inline-flex" data-action="togglePanel">
-          <span class="panel-toggle-label">Hide Params</span>
-        </button>
       </div>
     </div>
 
-    <div class="param-panel-container hidden lg:block w-80 flex-shrink-0 transition-all duration-300 ease-expo">
-      <ParamPanel pipeline={pipeline} values={initialValues} />
+    <div class="panel-wrap hidden lg:flex flex-shrink-0 relative" data-collapsed="false">
+      <button
+        id="panel-toggle"
+        class="panel-toggle group h-full w-6 flex items-center justify-center border-l border-border bg-surface hover:bg-surface-2 transition-colors duration-300 ease-expo"
+        aria-label="Toggle parameters"
+        aria-expanded="true"
+      >
+        <svg class="panel-toggle-icon w-3 h-3 text-text-muted group-hover:text-accent transition-all duration-300 ease-expo" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M8 2 L4 6 L8 10" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="param-panel-container w-80 overflow-hidden transition-all duration-300 ease-expo">
+        <ParamPanel pipeline={pipeline} values={initialValues} showPause={isAnimated} />
+      </div>
     </div>
 
     <button
@@ -73,7 +80,7 @@ for (const [key, def] of Object.entries(pipeline.params)) {
     </button>
 
     <div id="mobile-param-panel" class="lg:hidden fixed inset-x-0 bottom-0 z-40 translate-y-full transition-transform duration-300 ease-expo max-h-[70vh] overflow-y-auto">
-      <ParamPanel pipeline={pipeline} values={initialValues} />
+      <ParamPanel pipeline={pipeline} values={initialValues} showPause={isAnimated} />
     </div>
   </div>
 
@@ -86,32 +93,55 @@ for (const [key, def] of Object.entries(pipeline.params)) {
   const page = document.querySelector('.piece-page') as HTMLElement;
   const pipelineId = page?.dataset.pipelineId;
   const canvas = page?.querySelector('.sketch-canvas-wrapper') as HTMLElement;
-  const panelContainer = page?.querySelector('.param-panel-container') as HTMLElement;
 
+  // ------- Sidebar toggle (desktop) -------
+  const panelWrap = page?.querySelector('.panel-wrap') as HTMLElement;
+  const panelContainer = panelWrap?.querySelector('.param-panel-container') as HTMLElement;
+  const panelToggle = document.getElementById('panel-toggle');
+  const panelToggleIcon = panelToggle?.querySelector('.panel-toggle-icon') as SVGElement | null;
+
+  panelToggle?.addEventListener('click', () => {
+    const collapsed = panelWrap.dataset.collapsed === 'true';
+    const next = !collapsed;
+    panelWrap.dataset.collapsed = String(next);
+    panelToggle.setAttribute('aria-expanded', String(!next));
+
+    if (panelContainer) {
+      panelContainer.style.width = next ? '0px' : '20rem'; // 20rem = w-80
+    }
+    if (panelToggleIcon) {
+      panelToggleIcon.style.transform = next ? 'scaleX(-1)' : 'scaleX(1)';
+    }
+  });
+
+  // ------- Pause/Play (lives inside param panel) -------
   let paused = false;
-  let panelHidden = false;
+  document.querySelectorAll('.pause-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      paused = !paused;
+      canvas?.dispatchEvent(new CustomEvent(paused ? 'sketch:pause' : 'sketch:play'));
+      document.querySelectorAll('.pause-btn').forEach(b => {
+        const icon = b.querySelector('.pause-icon') as SVGElement | null;
+        const playIcon = b.querySelector('.play-icon') as SVGElement | null;
+        const lbl = b.querySelector('.pause-label');
+        if (paused) {
+          icon?.classList.add('hidden');
+          playIcon?.classList.remove('hidden');
+          if (lbl) lbl.textContent = 'Play';
+        } else {
+          icon?.classList.remove('hidden');
+          playIcon?.classList.add('hidden');
+          if (lbl) lbl.textContent = 'Pause';
+        }
+        b.setAttribute('aria-label', paused ? 'Play' : 'Pause');
+      });
+    });
+  });
 
+  // ------- Toolbar actions -------
   document.querySelectorAll('.tool-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const action = (btn as HTMLElement).dataset.action;
-
-      if (action === 'playPause') {
-        paused = !paused;
-        canvas?.dispatchEvent(new CustomEvent(paused ? 'sketch:pause' : 'sketch:play'));
-        const label = btn.querySelector('.play-pause-label');
-        if (label) label.textContent = paused ? 'Play' : 'Pause';
-        btn.setAttribute('aria-label', paused ? 'Play' : 'Pause');
-      }
-
-      if (action === 'togglePanel') {
-        panelHidden = !panelHidden;
-        if (panelContainer) {
-          panelContainer.style.width = panelHidden ? '0' : '';
-          panelContainer.style.overflow = 'hidden';
-        }
-        const label = btn.querySelector('.panel-toggle-label');
-        if (label) label.textContent = panelHidden ? 'Show Params' : 'Hide Params';
-      }
 
       if (action === 'save') {
         const c = canvas?.querySelector('canvas');
@@ -166,15 +196,15 @@ for (const [key, def] of Object.entries(pipeline.params)) {
     });
   });
 
-  // Mobile param panel toggle
+  // ------- Mobile param panel toggle -------
   const mobileToggle = document.getElementById('mobile-param-toggle');
   const mobilePanel = document.getElementById('mobile-param-panel');
-  let panelOpen = false;
+  let mobileOpen = false;
 
   mobileToggle?.addEventListener('click', () => {
-    panelOpen = !panelOpen;
+    mobileOpen = !mobileOpen;
     if (mobilePanel) {
-      mobilePanel.style.transform = panelOpen ? 'translateY(0)' : 'translateY(100%)';
+      mobilePanel.style.transform = mobileOpen ? 'translateY(0)' : 'translateY(100%)';
     }
   });
 </script>
