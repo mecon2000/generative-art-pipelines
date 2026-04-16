@@ -1,0 +1,16 @@
+---
+import GalleryLayout from '../../../layouts/GalleryLayout.astro';
+import CanvasCard from '../../../components/CanvasCard.astro';
+import { galleries } from '../../../data/galleries';
+import { attractors } from '../../../pipelines/cosmic/attractors';
+import { aurora } from '../../../pipelines/cosmic/aurora';
+import { starfield } from '../../../pipelines/cosmic/starfield';
+
+const theme = galleries.find(g => g.id === 'cosmic')!;
+const pieces = [attractors, aurora, starfield];
+---
+<GalleryLayout theme={theme} pieceCount={pieces.length}>
+  {pieces.map((p, i) => (
+    <CanvasCard pipeline={p} href={`/gallery/cosmic/${p.id}`} index={i} />
+  ))}
+</GalleryLayout>

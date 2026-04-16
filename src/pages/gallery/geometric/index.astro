@@ -1,0 +1,16 @@
+---
+import GalleryLayout from '../../../layouts/GalleryLayout.astro';
+import CanvasCard from '../../../components/CanvasCard.astro';
+import { galleries } from '../../../data/galleries';
+import { truchet } from '../../../pipelines/geometric/truchet';
+import { voronoi } from '../../../pipelines/geometric/voronoi';
+import { isometric } from '../../../pipelines/geometric/isometric';
+
+const theme = galleries.find(g => g.id === 'geometric')!;
+const pieces = [truchet, voronoi, isometric];
+---
+<GalleryLayout theme={theme} pieceCount={pieces.length}>
+  {pieces.map((p, i) => (
+    <CanvasCard pipeline={p} href={`/gallery/geometric/${p.id}`} index={i} />
+  ))}
+</GalleryLayout>

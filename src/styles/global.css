@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-void: #080808;
+  --color-surface: #111111;
+  --color-surface-2: #1a1a1a;
+  --color-border: #2a2a2a;
+  --color-text: #e8e6e0;
+  --color-text-muted: #666660;
+  --color-accent: #c8a96e;
+  --color-accent-dim: #7a6540;
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    background-color: var(--color-void);
+    color: var(--color-text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.875rem;
+    letter-spacing: 0.025em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.1;
+  }
+
+  a {
+    color: var(--color-accent);
+    text-decoration: none;
+    transition: color 0.3s var(--ease-expo);
+  }
+
+  a:hover {
+    color: var(--color-text);
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-void);
+  }
+}
+
+@layer components {
+  .label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--color-text-muted);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    border: 1px solid var(--color-accent);
+    color: var(--color-accent);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s var(--ease-expo);
+  }
+
+  .btn:hover {
+    background: var(--color-accent);
+    color: var(--color-void);
+  }
+
+  .stagger-in > * {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s var(--ease-expo) forwards;
+  }
+
+  .stagger-in > *:nth-child(1) { animation-delay: 0.1s; }
+  .stagger-in > *:nth-child(2) { animation-delay: 0.2s; }
+  .stagger-in > *:nth-child(3) { animation-delay: 0.3s; }
+  .stagger-in > *:nth-child(4) { animation-delay: 0.4s; }
+  .stagger-in > *:nth-child(5) { animation-delay: 0.5s; }
+  .stagger-in > *:nth-child(6) { animation-delay: 0.6s; }
+  .stagger-in > *:nth-child(7) { animation-delay: 0.7s; }
+  .stagger-in > *:nth-child(8) { animation-delay: 0.8s; }
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

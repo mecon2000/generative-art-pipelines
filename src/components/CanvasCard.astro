@@ -1,0 +1,94 @@
+---
+import type { Pipeline } from '../pipelines/_types';
+
+interface Props {
+  pipeline: Pipeline;
+  href: string;
+  index?: number;
+}
+
+const { pipeline, href, index = 0 } = Astro.props;
+---
+<a
+  href={href}
+  class="canvas-card group block relative aspect-[4/3] overflow-hidden border border-border rounded bg-surface transition-transform duration-300 ease-expo hover:scale-[1.02]"
+  style={`animation-delay: ${index * 0.1}s`}
+  data-pipeline-id={pipeline.id}
+  data-pipeline-theme={pipeline.theme}
+>
+  <div class="canvas-card-mount absolute inset-0" data-pipeline-id={pipeline.id} data-pipeline-theme={pipeline.theme}></div>
+
+  <div class="absolute inset-0 bg-gradient-to-t from-void/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+  <div class="absolute bottom-0 left-0 right-0 p-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 ease-expo">
+    <p class="font-mono text-sm text-text">{pipeline.name}</p>
+    <div class="flex gap-2 mt-1.5 flex-wrap">
+      {pipeline.tags.slice(0, 3).map(tag => (
+        <span class="label px-2 py-0.5 bg-surface-2 border border-border rounded text-[0.6rem]">
+          {tag}
+        </span>
+      ))}
+    </div>
+  </div>
+
+  <noscript>
+    <img src={`/previews/${pipeline.id}.png`} alt={pipeline.name} class="w-full h-full object-cover" loading="lazy" />
+  </noscript>
+</a>
+
+<script>
+  import type { Pipeline, ParamValues } from '../pipelines/_types';
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const card = entry.target as HTMLElement;
+        const mount = card.querySelector('.canvas-card-mount') as HTMLElement;
+        if (!mount || mount.dataset.loaded) return;
+        mount.dataset.loaded = 'true';
+        initCardCanvas(mount);
+        observer.unobserve(card);
+      }
+    });
+  }, { rootMargin: '200px' });
+
+  document.querySelectorAll('.canvas-card').forEach(card => {
+    observer.observe(card);
+  });
+
+  async function initCardCanvas(mount: HTMLElement) {
+    const id = mount.dataset.pipelineId!;
+    const theme = mount.dataset.pipelineTheme!;
+
+    try {
+      const mod = await import(`../pipelines/${theme}/${id}.ts`);
+      const pipeline: Pipeline = Object.values(mod)[0] as Pipeline;
+
+      const defaults: ParamValues = {};
+      for (const [key, def] of Object.entries(pipeline.params)) {
+        defaults[key] = def.default;
+      }
+
+      const p5Module = await import('p5');
+      const P5 = p5Module.default;
+
+      new P5((p: any) => {
+        let state: unknown;
+
+        p.setup = () => {
+          const canvas = p.createCanvas(mount.clientWidth, mount.clientHeight);
+          canvas.parent(mount);
+          p.pixelDensity(1);
+          state = pipeline.setup(p, defaults, canvas.elt);
+        };
+
+        let frame = 0;
+        p.draw = () => {
+          pipeline.draw(p, defaults, state, frame++);
+        };
+      });
+    } catch (err) {
+      console.error(`Card canvas error for ${id}:`, err);
+    }
+  }
+</script>

@@ -1,0 +1,33 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import type { GalleryTheme } from '../data/galleries';
+
+interface Props {
+  theme: GalleryTheme;
+  pieceCount: number;
+}
+
+const { theme, pieceCount } = Astro.props;
+---
+<BaseLayout title={`${theme.name} — Generative Art Pipelines`} description={theme.description}>
+  <div style={`--color-accent: ${theme.accentColor}; --color-accent-dim: ${theme.accentDim};`}>
+    <header class="sticky top-16 z-40 backdrop-blur-xl bg-void/80 border-b border-border">
+      <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div>
+          <h1 class="font-display italic text-3xl text-text">{theme.name}</h1>
+          <p class="label mt-1" style={`color: ${theme.accentColor}`}>{theme.tagline}</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="label">{pieceCount} pieces</span>
+          <a href="/gallery" class="label hover:text-accent transition-colors">&larr; All Galleries</a>
+        </div>
+      </div>
+    </header>
+
+    <section class="max-w-7xl mx-auto px-6 py-12">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-in">
+        <slot />
+      </div>
+    </section>
+  </div>
+</BaseLayout>

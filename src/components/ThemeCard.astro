@@ -1,0 +1,95 @@
+---
+import type { GalleryTheme } from '../data/galleries';
+
+interface Props {
+  theme: GalleryTheme;
+  pieceCount: number;
+}
+
+const { theme, pieceCount } = Astro.props;
+---
+<a
+  href={`/gallery/${theme.id}`}
+  class="theme-card group grid grid-cols-1 md:grid-cols-2 border border-border rounded overflow-hidden bg-surface hover:border-[var(--theme-accent)] transition-colors duration-300 ease-expo"
+  style={`--theme-accent: ${theme.accentColor}; --theme-accent-dim: ${theme.accentDim};`}
+>
+  <div
+    class="theme-card-canvas relative aspect-[4/3] md:aspect-auto overflow-hidden"
+    data-pipeline-id={theme.coverPipeline}
+    data-pipeline-theme={theme.id}
+  >
+    <div class="theme-card-mount w-full h-full"></div>
+  </div>
+
+  <div class="p-8 flex flex-col justify-center">
+    <h2 class="font-display italic text-4xl text-text group-hover:text-[var(--theme-accent)] transition-colors duration-300">
+      {theme.name}
+    </h2>
+    <p class="label mt-2" style={`color: ${theme.accentColor}`}>{theme.tagline}</p>
+    <p class="text-text-muted text-xs mt-4 leading-relaxed">{theme.description}</p>
+    <div class="flex items-center gap-4 mt-6">
+      <span class="label">{pieceCount} pieces</span>
+      <span class="btn text-xs" style={`border-color: ${theme.accentColor}; color: ${theme.accentColor}`}>
+        Enter
+      </span>
+    </div>
+  </div>
+</a>
+
+<script>
+  import type { Pipeline, ParamValues } from '../pipelines/_types';
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const card = entry.target as HTMLElement;
+        const canvasArea = card.querySelector('.theme-card-canvas') as HTMLElement;
+        if (!canvasArea || canvasArea.dataset.loaded) return;
+        canvasArea.dataset.loaded = 'true';
+        initThemeCanvas(canvasArea);
+        observer.unobserve(card);
+      }
+    });
+  }, { rootMargin: '200px' });
+
+  document.querySelectorAll('.theme-card').forEach(card => {
+    observer.observe(card);
+  });
+
+  async function initThemeCanvas(container: HTMLElement) {
+    const mount = container.querySelector('.theme-card-mount') as HTMLElement;
+    const id = container.dataset.pipelineId!;
+    const theme = container.dataset.pipelineTheme!;
+
+    try {
+      const mod = await import(`../pipelines/${theme}/${id}.ts`);
+      const pipeline: Pipeline = Object.values(mod)[0] as Pipeline;
+
+      const defaults: ParamValues = {};
+      for (const [key, def] of Object.entries(pipeline.params)) {
+        defaults[key] = def.default;
+      }
+
+      const p5Module = await import('p5');
+      const P5 = p5Module.default;
+
+      new P5((p: any) => {
+        let state: unknown;
+
+        p.setup = () => {
+          const canvas = p.createCanvas(mount.clientWidth, mount.clientHeight);
+          canvas.parent(mount);
+          p.pixelDensity(1);
+          state = pipeline.setup(p, defaults, canvas.elt);
+        };
+
+        let frame = 0;
+        p.draw = () => {
+          pipeline.draw(p, defaults, state, frame++);
+        };
+      });
+    } catch (err) {
+      console.error(`Theme card canvas error for ${id}:`, err);
+    }
+  }
+</script>

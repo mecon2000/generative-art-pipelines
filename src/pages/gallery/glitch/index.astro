@@ -1,0 +1,15 @@
+---
+import GalleryLayout from '../../../layouts/GalleryLayout.astro';
+import CanvasCard from '../../../components/CanvasCard.astro';
+import { galleries } from '../../../data/galleries';
+import { pixelsort } from '../../../pipelines/glitch/pixelsort';
+import { noiseCorruption } from '../../../pipelines/glitch/noise-corruption';
+
+const theme = galleries.find(g => g.id === 'glitch')!;
+const pieces = [pixelsort, noiseCorruption];
+---
+<GalleryLayout theme={theme} pieceCount={pieces.length}>
+  {pieces.map((p, i) => (
+    <CanvasCard pipeline={p} href={`/gallery/glitch/${p.id}`} index={i} />
+  ))}
+</GalleryLayout>

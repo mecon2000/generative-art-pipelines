@@ -1,0 +1,154 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import SketchCanvas from '../components/SketchCanvas.astro';
+import ParamPanel from '../components/ParamPanel.astro';
+import type { Pipeline, ParamValues } from '../pipelines/_types';
+import { getTheme } from '../data/themes';
+
+interface Props {
+  pipeline: Pipeline;
+}
+
+const { pipeline } = Astro.props;
+const theme = getTheme(pipeline.theme);
+
+const urlParams = Astro.url.searchParams;
+const initialValues: ParamValues = {};
+for (const [key, def] of Object.entries(pipeline.params)) {
+  const urlVal = urlParams.get(key);
+  if (urlVal !== null) {
+    if (def.type === 'range') initialValues[key] = parseFloat(urlVal);
+    else if (def.type === 'boolean') initialValues[key] = urlVal === 'true';
+    else initialValues[key] = urlVal;
+  } else {
+    initialValues[key] = def.default;
+  }
+}
+---
+<BaseLayout title={`${pipeline.name} — Generative Art Pipelines`} description={pipeline.description}>
+  <div
+    class="piece-page flex flex-col lg:flex-row h-[calc(100vh-4rem)]"
+    style={theme ? `--color-accent: ${theme.accentColor}; --color-accent-dim: ${theme.accentDim};` : ''}
+    data-pipeline-id={pipeline.id}
+  >
+    <div class="flex-1 relative">
+      <SketchCanvas
+        pipelineId={pipeline.id}
+        theme={pipeline.theme}
+        params={initialValues}
+        interactive={true}
+        class="w-full h-full"
+      />
+
+      <div class="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-center gap-3 bg-gradient-to-t from-void/60 to-transparent">
+        <button class="tool-btn btn text-xs" data-action="save">Save PNG</button>
+        <button class="tool-btn btn text-xs" data-action="fullscreen">Fullscreen</button>
+        <button class="tool-btn btn text-xs" data-action="newSeed">New Seed</button>
+        <button class="tool-btn btn text-xs" data-action="share">Share</button>
+      </div>
+    </div>
+
+    <div class="hidden lg:block w-80 flex-shrink-0">
+      <ParamPanel pipeline={pipeline} values={initialValues} />
+    </div>
+
+    <button
+      id="mobile-param-toggle"
+      class="lg:hidden fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-accent text-void flex items-center justify-center shadow-lg"
+      aria-label="Toggle parameters"
+    >
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
+        <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
+        <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
+        <line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" />
+        <line x1="17" y1="16" x2="23" y2="16" />
+      </svg>
+    </button>
+
+    <div id="mobile-param-panel" class="lg:hidden fixed inset-x-0 bottom-0 z-40 translate-y-full transition-transform duration-300 ease-expo max-h-[70vh] overflow-y-auto">
+      <ParamPanel pipeline={pipeline} values={initialValues} />
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-surface-2 border border-border text-text px-4 py-2 rounded font-mono text-xs opacity-0 pointer-events-none transition-opacity duration-300">
+    Link copied to clipboard
+  </div>
+</BaseLayout>
+
+<script>
+  const page = document.querySelector('.piece-page') as HTMLElement;
+  const pipelineId = page?.dataset.pipelineId;
+  const canvas = page?.querySelector('.sketch-canvas-wrapper') as HTMLElement;
+
+  document.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const action = (btn as HTMLElement).dataset.action;
+
+      if (action === 'save') {
+        const c = canvas?.querySelector('canvas');
+        if (c) {
+          const link = document.createElement('a');
+          link.download = `${pipelineId}.png`;
+          link.href = c.toDataURL('image/png');
+          link.click();
+        }
+      }
+
+      if (action === 'fullscreen') {
+        const c = canvas?.querySelector('canvas');
+        if (c) {
+          if (document.fullscreenElement) {
+            document.exitFullscreen();
+          } else {
+            c.requestFullscreen();
+          }
+        }
+      }
+
+      if (action === 'newSeed') {
+        canvas?.dispatchEvent(new CustomEvent('sketch:newSeed'));
+      }
+
+      if (action === 'share') {
+        const params = new URLSearchParams();
+        canvas?.querySelectorAll('.param-panel .param-input, .piece-page .param-input')
+        // Collect from param panel
+        const panel = document.querySelector(`.param-panel[data-pipeline-id="${pipelineId}"]`);
+        if (panel) {
+          panel.querySelectorAll('.param-input').forEach(input => {
+            const key = (input as HTMLElement).dataset.paramKey!;
+            const type = (input as HTMLElement).dataset.paramType!;
+            let val: string;
+            if (type === 'boolean') {
+              val = String((input as HTMLInputElement).checked);
+            } else {
+              val = (input as HTMLInputElement).value;
+            }
+            params.set(key, val);
+          });
+        }
+        const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+        navigator.clipboard.writeText(url).then(() => {
+          const toast = document.getElementById('toast');
+          if (toast) {
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+          }
+        });
+      }
+    });
+  });
+
+  // Mobile param panel toggle
+  const mobileToggle = document.getElementById('mobile-param-toggle');
+  const mobilePanel = document.getElementById('mobile-param-panel');
+  let panelOpen = false;
+
+  mobileToggle?.addEventListener('click', () => {
+    panelOpen = !panelOpen;
+    if (mobilePanel) {
+      mobilePanel.style.transform = panelOpen ? 'translateY(0)' : 'translateY(100%)';
+    }
+  });
+</script>

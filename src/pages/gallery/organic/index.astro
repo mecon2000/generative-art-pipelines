@@ -1,0 +1,16 @@
+---
+import GalleryLayout from '../../../layouts/GalleryLayout.astro';
+import CanvasCard from '../../../components/CanvasCard.astro';
+import { galleries } from '../../../data/galleries';
+import { flowField } from '../../../pipelines/organic/flow-field';
+import { lsystem } from '../../../pipelines/organic/lsystem';
+import { reactionDiffusion } from '../../../pipelines/organic/reaction-diffusion';
+
+const theme = galleries.find(g => g.id === 'organic')!;
+const pieces = [flowField, lsystem, reactionDiffusion];
+---
+<GalleryLayout theme={theme} pieceCount={pieces.length}>
+  {pieces.map((p, i) => (
+    <CanvasCard pipeline={p} href={`/gallery/organic/${p.id}`} index={i} />
+  ))}
+</GalleryLayout>

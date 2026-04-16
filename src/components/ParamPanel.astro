@@ -1,0 +1,141 @@
+---
+import type { Pipeline, ParamValues } from '../pipelines/_types';
+
+interface Props {
+  pipeline: Pipeline;
+  values?: ParamValues;
+}
+
+const { pipeline, values } = Astro.props;
+
+const currentValues: ParamValues = {};
+for (const [key, def] of Object.entries(pipeline.params)) {
+  currentValues[key] = values?.[key] ?? def.default;
+}
+---
+<aside
+  class="param-panel bg-surface border-l border-border h-full overflow-y-auto"
+  data-pipeline-id={pipeline.id}
+>
+  <div class="p-6 space-y-6">
+    <div>
+      <h2 class="font-display italic text-2xl text-text">{pipeline.name}</h2>
+      <p class="text-text-muted text-xs mt-2 leading-relaxed">{pipeline.description}</p>
+    </div>
+
+    <div class="space-y-5">
+      {Object.entries(pipeline.params).map(([key, def]) => (
+        <div class="param-control" data-param-key={key}>
+          <label class="label block mb-2">{def.label}</label>
+
+          {def.type === 'range' && (
+            <div class="flex items-center gap-3">
+              <input
+                type="range"
+                class="param-input flex-1 accent-[var(--color-accent)]"
+                data-param-key={key}
+                data-param-type="range"
+                min={def.min}
+                max={def.max}
+                step={def.step}
+                value={String(currentValues[key])}
+              />
+              <span class="param-value-display text-text-muted text-xs w-12 text-right font-mono">
+                {currentValues[key]}
+              </span>
+            </div>
+          )}
+
+          {def.type === 'color' && (
+            <input
+              type="color"
+              class="param-input w-full h-8 bg-transparent border border-border rounded cursor-pointer"
+              data-param-key={key}
+              data-param-type="color"
+              value={String(currentValues[key])}
+            />
+          )}
+
+          {def.type === 'boolean' && (
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                class="param-input sr-only peer"
+                data-param-key={key}
+                data-param-type="boolean"
+                checked={currentValues[key] as boolean}
+              />
+              <div class="w-11 h-6 bg-border rounded-full peer peer-checked:bg-accent transition-colors duration-300"></div>
+            </label>
+          )}
+
+          {def.type === 'select' && (
+            <select
+              class="param-input w-full bg-surface-2 border border-border text-text px-3 py-2 font-mono text-xs rounded"
+              data-param-key={key}
+              data-param-type="select"
+            >
+              {def.options?.map(opt => (
+                <option value={opt} selected={currentValues[key] === opt}>{opt}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      ))}
+    </div>
+
+    <button class="param-reset btn w-full justify-center text-xs">
+      Reset Defaults
+    </button>
+  </div>
+</aside>
+
+<script>
+  document.querySelectorAll('.param-panel').forEach(panel => {
+    const pipelineId = panel.getAttribute('data-pipeline-id');
+    const canvas = document.querySelector(`.sketch-canvas-wrapper[data-pipeline-id="${pipelineId}"]`);
+    if (!canvas) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout>;
+
+    panel.querySelectorAll('.param-input').forEach(input => {
+      const key = (input as HTMLElement).dataset.paramKey!;
+      const type = (input as HTMLElement).dataset.paramType!;
+
+      const handler = () => {
+        let value: number | string | boolean;
+        if (type === 'range') {
+          value = parseFloat((input as HTMLInputElement).value);
+          const display = (input as HTMLElement).closest('.param-control')?.querySelector('.param-value-display');
+          if (display) display.textContent = String(value);
+        } else if (type === 'boolean') {
+          value = (input as HTMLInputElement).checked;
+        } else {
+          value = (input as HTMLInputElement).value;
+        }
+
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          canvas.dispatchEvent(new CustomEvent('params:update', { detail: { [key]: value } }));
+        }, 16);
+      };
+
+      if (type === 'range') {
+        input.addEventListener('input', handler);
+      } else {
+        input.addEventListener('change', handler);
+      }
+    });
+
+    panel.querySelector('.param-reset')?.addEventListener('click', () => {
+      panel.querySelectorAll('.param-input').forEach(input => {
+        const key = (input as HTMLElement).dataset.paramKey!;
+        const type = (input as HTMLElement).dataset.paramType!;
+        const defaultVal = (input as HTMLElement).getAttribute(type === 'range' ? 'value' : 'data-default');
+
+        // Reset is handled by reloading the page without query params
+        window.location.href = window.location.pathname;
+      });
+    });
+  });
+</script>
