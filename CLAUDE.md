@@ -59,3 +59,14 @@ Every pipeline implements the `Pipeline` interface from `src/pipelines/_types.ts
 - **Geometric** (accent: #6ea8c8): truchet, voronoi, isometric
 - **Cosmic** (accent: #c86e9e): attractors, aurora, starfield
 - **Glitch** (accent: #e87e4a): pixelsort, noise-corruption
+- **Dimensional** (accent: #b89be8, WEBGL): torus-field, particle-cloud, cube-wave
+- **Photography** (accent: #d4a373): photo-sort, photo-mosaic, photo-ascii, photo-shatter
+
+Photos for the Photography gallery live in `public/photos/portrait-01.jpg` ... `portrait-05.jpg`
+(copied from the photo catalog, resized to 1600px wide, ~100-200KB each). Use
+`src/pipelines/photography/_photos.ts` as the canonical photo registry. To add more photos:
+1. Resize to ~1600px wide (use sharp)
+2. Save as `public/photos/portrait-XX.jpg`
+3. Add entry to PHOTO_OPTIONS in `_photos.ts`
+4. Consent note: only use photos tagged `clothing=dressed` AND NOT tagged `nude/partial_nude/lingerie`
+   or `boldness=bold/explicit`. Query photo-catalog.db as needed.

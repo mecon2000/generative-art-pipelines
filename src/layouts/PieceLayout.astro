@@ -40,15 +40,21 @@ for (const [key, def] of Object.entries(pipeline.params)) {
         class="w-full h-full"
       />
 
-      <div class="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-center gap-3 bg-gradient-to-t from-void/60 to-transparent">
+      <div class="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-center gap-2 flex-wrap bg-gradient-to-t from-void/60 to-transparent">
+        <button class="tool-btn btn text-xs" data-action="playPause" aria-label="Pause">
+          <span class="play-pause-label">Pause</span>
+        </button>
+        <button class="tool-btn btn text-xs" data-action="newSeed">New Seed</button>
         <button class="tool-btn btn text-xs" data-action="save">Save PNG</button>
         <button class="tool-btn btn text-xs" data-action="fullscreen">Fullscreen</button>
-        <button class="tool-btn btn text-xs" data-action="newSeed">New Seed</button>
         <button class="tool-btn btn text-xs" data-action="share">Share</button>
+        <button class="tool-btn btn text-xs hidden lg:inline-flex" data-action="togglePanel">
+          <span class="panel-toggle-label">Hide Params</span>
+        </button>
       </div>
     </div>
 
-    <div class="hidden lg:block w-80 flex-shrink-0">
+    <div class="param-panel-container hidden lg:block w-80 flex-shrink-0 transition-all duration-300 ease-expo">
       <ParamPanel pipeline={pipeline} values={initialValues} />
     </div>
 
@@ -80,10 +86,32 @@ for (const [key, def] of Object.entries(pipeline.params)) {
   const page = document.querySelector('.piece-page') as HTMLElement;
   const pipelineId = page?.dataset.pipelineId;
   const canvas = page?.querySelector('.sketch-canvas-wrapper') as HTMLElement;
+  const panelContainer = page?.querySelector('.param-panel-container') as HTMLElement;
+
+  let paused = false;
+  let panelHidden = false;
 
   document.querySelectorAll('.tool-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       const action = (btn as HTMLElement).dataset.action;
+
+      if (action === 'playPause') {
+        paused = !paused;
+        canvas?.dispatchEvent(new CustomEvent(paused ? 'sketch:pause' : 'sketch:play'));
+        const label = btn.querySelector('.play-pause-label');
+        if (label) label.textContent = paused ? 'Play' : 'Pause';
+        btn.setAttribute('aria-label', paused ? 'Play' : 'Pause');
+      }
+
+      if (action === 'togglePanel') {
+        panelHidden = !panelHidden;
+        if (panelContainer) {
+          panelContainer.style.width = panelHidden ? '0' : '';
+          panelContainer.style.overflow = 'hidden';
+        }
+        const label = btn.querySelector('.panel-toggle-label');
+        if (label) label.textContent = panelHidden ? 'Show Params' : 'Hide Params';
+      }
 
       if (action === 'save') {
         const c = canvas?.querySelector('canvas');
@@ -112,8 +140,6 @@ for (const [key, def] of Object.entries(pipeline.params)) {
 
       if (action === 'share') {
         const params = new URLSearchParams();
-        canvas?.querySelectorAll('.param-panel .param-input, .piece-page .param-input')
-        // Collect from param panel
         const panel = document.querySelector(`.param-panel[data-pipeline-id="${pipelineId}"]`);
         if (panel) {
           panel.querySelectorAll('.param-input').forEach(input => {

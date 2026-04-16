@@ -9,6 +9,8 @@ const pieceCounts: Record<string, number> = {
   geometric: 3,
   cosmic: 3,
   glitch: 2,
+  dimensional: 3,
+  photography: 4,
 };
 ---
 <BaseLayout title="Generative Art Pipelines">
@@ -33,7 +35,7 @@ const pieceCounts: Record<string, number> = {
 
   <!-- Theme Cards -->
   <section class="max-w-7xl mx-auto px-6 py-24">
-    <h2 class="font-display italic text-4xl text-text mb-12 text-center">Four Worlds</h2>
+    <h2 class="font-display italic text-4xl text-text mb-12 text-center">Six Worlds</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 stagger-in">
       {galleries.sort((a, b) => a.order - b.order).map(theme => (
         <ThemeCard theme={theme} pieceCount={pieceCounts[theme.id] || 0} />
@@ -56,11 +58,11 @@ const pieceCounts: Record<string, number> = {
   <section class="border-t border-border py-16 px-6">
     <div class="max-w-4xl mx-auto grid grid-cols-3 gap-8 text-center stagger-in">
       <div>
-        <p class="font-display italic text-5xl text-accent">11</p>
+        <p class="font-display italic text-5xl text-accent">18</p>
         <p class="label mt-2">pipelines</p>
       </div>
       <div>
-        <p class="font-display italic text-5xl text-accent">4</p>
+        <p class="font-display italic text-5xl text-accent">6</p>
         <p class="label mt-2">themes</p>
       </div>
       <div>

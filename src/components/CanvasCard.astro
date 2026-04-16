@@ -76,7 +76,10 @@ const { pipeline, href, index = 0 } = Astro.props;
         let state: unknown;
 
         p.setup = () => {
-          const canvas = p.createCanvas(mount.clientWidth, mount.clientHeight);
+          const renderer = pipeline.renderer === 'WEBGL' ? p.WEBGL : undefined;
+          const canvas = renderer
+            ? p.createCanvas(mount.clientWidth, mount.clientHeight, renderer)
+            : p.createCanvas(mount.clientWidth, mount.clientHeight);
           canvas.parent(mount);
           p.pixelDensity(1);
           state = pipeline.setup(p, defaults, canvas.elt);

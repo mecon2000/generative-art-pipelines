@@ -1,0 +1,17 @@
+---
+import GalleryLayout from '../../../layouts/GalleryLayout.astro';
+import CanvasCard from '../../../components/CanvasCard.astro';
+import { galleries } from '../../../data/galleries';
+import { photoSort } from '../../../pipelines/photography/photo-sort';
+import { photoMosaic } from '../../../pipelines/photography/photo-mosaic';
+import { photoAscii } from '../../../pipelines/photography/photo-ascii';
+import { photoShatter } from '../../../pipelines/photography/photo-shatter';
+
+const theme = galleries.find(g => g.id === 'photography')!;
+const pieces = [photoSort, photoMosaic, photoAscii, photoShatter];
+---
+<GalleryLayout theme={theme} pieceCount={pieces.length}>
+  {pieces.map((p, i) => (
+    <CanvasCard pipeline={p} href={`/gallery/photography/${p.id}`} index={i} />
+  ))}
+</GalleryLayout>

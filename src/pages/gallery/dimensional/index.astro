@@ -1,0 +1,16 @@
+---
+import GalleryLayout from '../../../layouts/GalleryLayout.astro';
+import CanvasCard from '../../../components/CanvasCard.astro';
+import { galleries } from '../../../data/galleries';
+import { torusField } from '../../../pipelines/dimensional/torus-field';
+import { particleCloud } from '../../../pipelines/dimensional/particle-cloud';
+import { cubeWave } from '../../../pipelines/dimensional/cube-wave';
+
+const theme = galleries.find(g => g.id === 'dimensional')!;
+const pieces = [torusField, particleCloud, cubeWave];
+---
+<GalleryLayout theme={theme} pieceCount={pieces.length}>
+  {pieces.map((p, i) => (
+    <CanvasCard pipeline={p} href={`/gallery/dimensional/${p.id}`} index={i} />
+  ))}
+</GalleryLayout>

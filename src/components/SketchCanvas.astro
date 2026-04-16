@@ -63,7 +63,10 @@ const { pipelineId, theme, params, interactive = true, class: className = '' } =
 
         this.p5Instance = new P5((p: any) => {
           p.setup = () => {
-            const canvas = p.createCanvas(this.mount.clientWidth, this.mount.clientHeight);
+            const renderer = pipeline.renderer === 'WEBGL' ? (p as any).WEBGL : undefined;
+            const canvas = renderer
+              ? p.createCanvas(this.mount.clientWidth, this.mount.clientHeight, renderer)
+              : p.createCanvas(this.mount.clientWidth, this.mount.clientHeight);
             canvas.parent(this.mount);
             p.pixelDensity(1);
             this.state = pipeline.setup(p, this.params, canvas.elt);
@@ -90,6 +93,14 @@ const { pipelineId, theme, params, interactive = true, class: className = '' } =
             this.pipeline.onParamChange(this.p5Instance, this.params, this.state);
           }
         }) as EventListener);
+
+        this.wrapper.addEventListener('sketch:pause', () => {
+          if (this.p5Instance) this.p5Instance.noLoop();
+        });
+
+        this.wrapper.addEventListener('sketch:play', () => {
+          if (this.p5Instance) this.p5Instance.loop();
+        });
 
         this.wrapper.addEventListener('sketch:newSeed', () => {
           if (this.p5Instance && this.pipeline) {

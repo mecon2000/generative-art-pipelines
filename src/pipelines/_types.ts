@@ -23,6 +23,7 @@ export interface Pipeline {
   description: string;
   tags: string[];
   params: ParamSchema;
+  renderer?: 'P2D' | 'WEBGL';
   setup: (p: import('p5'), params: ParamValues, canvas: HTMLCanvasElement) => unknown;
   draw: (p: import('p5'), params: ParamValues, state: unknown, frame: number) => void;
   onParamChange?: (p: import('p5'), params: ParamValues, state: unknown) => void;
